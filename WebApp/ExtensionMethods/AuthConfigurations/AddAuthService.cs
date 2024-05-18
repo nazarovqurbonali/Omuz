@@ -11,6 +11,7 @@ public static class AddAuthService
     {
         var key = configuration["JWT:Key"];
 
+        services.AddAuthorization();
         services.AddAuthentication(x =>
         {
             x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

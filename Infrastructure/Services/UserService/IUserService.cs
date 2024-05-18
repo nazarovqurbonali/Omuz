@@ -7,7 +7,6 @@ namespace Infrastructure.Services.UserService;
 
 public interface IUserService
 {
-    
     Task<PagedResponse<List<GetUserDto>>> GetUserAsync(UserFilter filter);
     Task<Response<string>> AddUserAsync(CreateUserDto createUserDto);
     Task<Response<string>> UpdateUserAsync(UpdateUserDto updateUserDto);

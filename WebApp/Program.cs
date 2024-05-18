@@ -15,6 +15,7 @@ builder.Services.AddEndpointsApiExplorer();
 // connection to database && dependency injection
 builder.Services.AddRegisterService(builder.Configuration);
 
+
 // register swagger configuration
 builder.Services.SwaggerService();
 
@@ -31,8 +32,8 @@ app.UseCors(
         .AllowAnyHeader()
         .AllowAnyMethod()
 );
-try
-{
+
+try {
     var serviceProvider = app.Services.CreateScope().ServiceProvider; 
     var dataContext = serviceProvider.GetRequiredService<DataContext>();
     await dataContext.Database.MigrateAsync();

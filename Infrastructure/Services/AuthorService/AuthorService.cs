@@ -32,6 +32,9 @@ public class AuthorService(DataContext context):IAuthorService
                     LastName = x.LastName,
                     DoB = x.DoB,
                     IsAlive = x.IsAlive,
+                    CreatedAt = x.CreatedAt,
+                    UpdatedAt = x.UpdatedAt
+                    
                 }).Skip((filter.PageNumber - 1) * filter.PageSize).Take(filter.PageSize)
                 .ToListAsync();
 
@@ -45,9 +48,9 @@ public class AuthorService(DataContext context):IAuthorService
 
     #endregion
 
-    #region GetAuthorsByIdAsync
+    #region GetAuthorByIdAsync
 
-    public async Task<Response<GetAuthorDto>> GetAuthorsByIdAsync(int id)
+    public async Task<Response<GetAuthorDto>> GetAuthorByIdAsync(int id)
     {
         try
         {
@@ -59,7 +62,9 @@ public class AuthorService(DataContext context):IAuthorService
                 FirstName = author.FirstName,
                 LastName = author.LastName,
                 DoB = author.DoB,
-                IsAlive = author.IsAlive
+                IsAlive = author.IsAlive,
+                CreatedAt = author.CreatedAt,
+                UpdatedAt = author.UpdatedAt    
             };
 
             return new Response<GetAuthorDto>(result);
@@ -84,7 +89,9 @@ public class AuthorService(DataContext context):IAuthorService
                 FirstName = model.FirstName,
                 LastName = model.LastName,
                 DoB = model.DoB,
-                IsAlive = model.IsAlive
+                IsAlive = model.IsAlive,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
             };
             await context.Authors.AddAsync(newAuthor);
             await context.SaveChangesAsync();
@@ -113,6 +120,7 @@ public class AuthorService(DataContext context):IAuthorService
             request.LastName = author.LastName;
             request.DoB = author.DoB;
             request.IsAlive = author.IsAlive;
+            request.UpdatedAt = DateTimeOffset.UtcNow;
 
             await context.SaveChangesAsync();
 
@@ -138,7 +146,7 @@ public class AuthorService(DataContext context):IAuthorService
             context.Authors.Remove(author);
             await context.SaveChangesAsync();
             
-            return new Response<bool>(HttpStatusCode.OK, "Author deleted successfully");
+            return new Response<bool>(true);
         }
         catch (Exception e)
         {

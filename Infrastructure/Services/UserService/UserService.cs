@@ -1,5 +1,6 @@
-using AutoMapper;
-using Domain;
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using Domain.DTOs.UserDto;
 using Domain.Entities;
 using Domain.Filters;
@@ -11,93 +12,164 @@ namespace Infrastructure.Services.UserService;
 
 public class UserService(DataContext context) : IUserService
 {
-    
-    
+    #region AddUserAsync
+
     public async Task<Response<string>> AddUserAsync(CreateUserDto addUserDto)
     {
         try
         {
-            var mapped = _mapper.Map<User>(addUserDto);
-            await _context.Users.AddAsync(mapped);
-            await _context.SaveChangesAsync();
+            var existing = await context.Users.AnyAsync(x => x.Email == addUserDto.Email);
+            if (existing) return new Response<string>(HttpStatusCode.BadRequest, "User already exists");
+
+            var user = new User()
+            {
+                FullName = addUserDto.FullName,
+                Email = addUserDto.Email,
+                HashPassword = ConvertToHash(addUserDto.HashPassword) ,
+                PhoneNumber = addUserDto.PhoneNumber,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
             return new Response<string>("User added successfully");
         }
         catch (Exception ex)
         {
-            return new Response<string>(System.Net.HttpStatusCode.InternalServerError, ex.Message);
+            return new Response<string>(HttpStatusCode.InternalServerError, ex.Message);
         }
     }
+
+    #endregion
+
+    #region GetUserAsync
 
     public async Task<PagedResponse<List<GetUserDto>>> GetUserAsync(UserFilter filter)
     {
         try
         {
-            var Users = _context.Users.AsQueryable();
+            var query = context.Users.AsQueryable();
+
+
             if (!string.IsNullOrEmpty(filter.FullName))
-                Users = Users.Where(x => x.FullName.ToLower().Contains(filter.FullName.ToLower()));
+                query = query.Where(x => x.FullName.ToLower().Contains(filter.FullName.ToLower()));
 
-            var User = await Users.Skip((filter.PageNumber - 1) * filter.PageSize).Take(filter.PageSize).ToListAsync();
-            var total = await Users.CountAsync();
-
-            var response = _mapper.Map<List<GetUserDto>>(Users);
-            return new PagedResponse<List<GetUserDto>>(response, total, filter.PageNumber, filter.PageSize);
+            var user = await query.Select(x => new GetUserDto()
+                {
+                    Id = x.Id,
+                    FullName = x.FullName,
+                    Email = x.Email,
+                    HashPassword = x.HashPassword,
+                    PhoneNumber = x.PhoneNumber,
+                    CreatedAt = x.CreatedAt,
+                    UpdatedAt = x.UpdatedAt
+                }).Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .ToListAsync();
+            var totalRecord = await query.CountAsync();
+            return new PagedResponse<List<GetUserDto>>(user, totalRecord, filter.PageNumber, filter.PageSize);
         }
         catch (Exception e)
         {
-            return new PagedResponse<List<GetUserDto>>(System.Net.HttpStatusCode.InternalServerError, e.Message);
+            return new PagedResponse<List<GetUserDto>>(HttpStatusCode.InternalServerError, e.Message);
         }
     }
+
+    #endregion
+
+    #region DeleteUserAsync
 
     public async Task<Response<bool>> DeleteUserAsync(int id)
     {
         try
         {
-            var existing = await _context.Users.Where(e => e.Id == id).ExecuteDeleteAsync();
-            if (existing == 0) return new Response<bool>(System.Net.HttpStatusCode.BadRequest, "User not found!");
-            return new Response<bool>(true);
+            var user = await context.Users.FirstOrDefaultAsync(x => x.Id == id);
+            if (user == null) return new Response<bool>(HttpStatusCode.NotFound, "User Not Found");
+
+            context.Users.Remove(user);
+            await context.SaveChangesAsync();
+            return new Response<bool>(HttpStatusCode.OK, "User deleted succesfuly");
         }
         catch (Exception ex)
         {
-            return new Response<bool>(System.Net.HttpStatusCode.InternalServerError, ex.Message);
+            return new Response<bool>(HttpStatusCode.InternalServerError, ex.Message);
         }
     }
 
+    #endregion
+    
+    #region UpdateUserAsync
 
     public async Task<Response<string>> UpdateUserAsync(UpdateUserDto updateUserDto)
     {
         try
         {
-            var existing = await _context.Users.AnyAsync(e => e.Id == updateUserDto.Id);
-            if (!existing) return new Response<string>(System.Net.HttpStatusCode.BadRequest, "User not found!");
-            var mapped = _mapper.Map<User>(updateUserDto);
-            _context.Users.Update(mapped);
+            var request = await context.Users.FirstOrDefaultAsync(e => e.Id == updateUserDto.Id);
+            if (request == null) return new Response<string>(HttpStatusCode.NotFound, "User Not Found");
 
-            await _context.SaveChangesAsync();
-            return new Response<string>("Updated successfully");
+            request.Id = updateUserDto.Id;
+            request.FullName = updateUserDto.FullName;
+            request.Email = updateUserDto.Email;
+            request.HashPassword = ConvertToHash(updateUserDto.HashPassword);
+            request.PhoneNumber = updateUserDto.PhoneNumber;
+            request.UpdatedAt = DateTimeOffset.UtcNow;
+
+            await context.SaveChangesAsync();
+            return new Response<string>(HttpStatusCode.OK, "User Updated Successfuly");
         }
         catch (Exception ex)
         {
-            return new Response<string>(System.Net.HttpStatusCode.InternalServerError, ex.Message);
+            return new Response<string>(HttpStatusCode.InternalServerError, ex.Message);
         }
     }
+
+    #endregion
+
+    #region GetUserByIdAsync
 
     public async Task<Response<GetUserDto>> GetUserByIdAsync(int id)
     {
         try
         {
-            var existing = await _context.Users.FirstOrDefaultAsync(x => x.Id == id);
-            if (existing == null) return new Response<GetUserDto>(System.Net.HttpStatusCode.BadRequest, "User not found");
-            var User = _mapper.Map<GetUserDto>(existing);
-            return new Response<GetUserDto>(User);
+            var user = await context.Users.FirstOrDefaultAsync(e => e.Id == id);
+            if (user == null) return new Response<GetUserDto>(HttpStatusCode.NotFound, "User Not Found");
+            var result = new GetUserDto()
+            {
+                Id = user.Id,
+                FullName = user.FullName,
+                Email = user.Email,
+                HashPassword = user.HashPassword,
+                PhoneNumber = user.PhoneNumber,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt
+                
+            };
+            return new Response<GetUserDto>(result);
         }
         catch (Exception e)
         {
-            return new Response<GetUserDto>(System.Net.HttpStatusCode.InternalServerError, e.Message);
+            return new Response<GetUserDto>(HttpStatusCode.InternalServerError, e.Message);
         }
     }
+
+    #endregion
+
+    #region ConvertToHash
+
+    private static string ConvertToHash(string rawData)
+    {
+        using (SHA256 sha256Hash = SHA256.Create())
+        {
+            byte[] bytes =  sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(rawData));
+
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                builder.Append(bytes[i].ToString("x2"));
+            }
+            return builder.ToString();
+        }
+    }
+
+    #endregion
 }
-
-
-
-
-

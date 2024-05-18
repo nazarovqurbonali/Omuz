@@ -13,21 +13,24 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Infrastructure.Services.AuthService;
 
-public class AuthService(DataContext context,IConfiguration configuration) : IAuthService
+public class AuthService(DataContext context, IConfiguration configuration) : IAuthService
 {
-
-  
+    #region Login
 
     public async Task<Response<string>> Login(LoginDto loginDto)
     {
-        var user = await context.Users.FirstOrDefaultAsync(x => x.FullName == loginDto.UserName && x.HashPassword==ConvertToHash(loginDto.Password) );
-        if (user == null)return  new Response<string>(HttpStatusCode.BadRequest,"Incorrect name or password") ;
-        
-        return new Response<string>(GenerateJwtToken(user)) ;
+        var user = await context.Users.FirstOrDefaultAsync(x =>
+            x.FullName == loginDto.UserName && x.HashPassword == ConvertToHash(loginDto.Password));
+        if (user == null) return new Response<string>(HttpStatusCode.BadRequest, "Incorrect name or password");
+
+        return new Response<string>(GenerateJwtToken(user));
     }
 
+    #endregion
 
-    private  string GenerateJwtToken(User user)
+    #region GenerateJwtToken
+
+    private string GenerateJwtToken(User user)
     {
         var key = Encoding.UTF8.GetBytes(configuration["Jwt:Key"]!);
         var securityKey = new SymmetricSecurityKey(key);
@@ -53,7 +56,11 @@ public class AuthService(DataContext context,IConfiguration configuration) : IAu
         return tokenString;
     }
 
-    private static string ConvertToHash(string rawData)
+    #endregion
+
+    #region ConvertToHash
+
+    private string ConvertToHash(string rawData)
     {
         using (SHA256 sha256Hash = SHA256.Create())
         {
@@ -64,9 +71,10 @@ public class AuthService(DataContext context,IConfiguration configuration) : IAu
             {
                 builder.Append(bytes[i].ToString("x2"));
             }
+
             return builder.ToString();
         }
     }
 
-   
+    #endregion
 }

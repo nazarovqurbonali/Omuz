@@ -11,8 +11,7 @@ public class AuthController(IAuthService authService)
 {
     [HttpPost("Login")]
     public async Task<Response<string>> Login([FromBody] LoginDto loginDto)
-    {
-        return await authService.Login(loginDto);
-    }
+    => await authService.Login(loginDto);
+    
 
 }

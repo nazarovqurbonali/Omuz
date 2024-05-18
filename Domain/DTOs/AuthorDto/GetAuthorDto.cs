@@ -7,4 +7,6 @@ public class GetAuthorDto
     public string? LastName { get; set; }
     public DateTimeOffset DoB { get; set; }
     public bool IsAlive { get; set; } = true;
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
 }
