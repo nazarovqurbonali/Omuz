@@ -1,10 +1,9 @@
-namespace Domain.Entities;
+namespace Domain.DTOs.AuthorDto;
 
-public class Author:BaseEntity
+public class CreateAuthorDto
 {
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
     public DateTimeOffset DoB { get; set; }
     public bool IsAlive { get; set; } = true;
-    public List<AuthorBook>? AuthorBooks { get; set; }
 }

@@ -1,4 +1,6 @@
-using Infrastructure.AutoMapper;
+using Infrastructure.Data;
+using Infrastructure.Seed;
+using Microsoft.EntityFrameworkCore;
 using WebApp.ExtensionMethods.AuthConfigurations;
 using WebApp.ExtensionMethods.RegisterService;
 using WebApp.ExtensionMethods.SwaggerConfigurations;
@@ -19,16 +21,33 @@ builder.Services.SwaggerService();
 // authentications service
 builder.Services.AddAuthConfigureService(builder.Configuration);
 
-// automapper
-builder.Services.AddAutoMapper(typeof(MapperProfile));
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+app.UseCors(
+    build => build.WithOrigins( "http://localhost:3000","https://localhost:5173")
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+);
+try
+{
+    var serviceProvider = app.Services.CreateScope().ServiceProvider; 
+    var dataContext = serviceProvider.GetRequiredService<DataContext>();
+    await dataContext.Database.MigrateAsync();
+    
+    // seed data
+    var seeder = serviceProvider.GetRequiredService<Seeder>();
+    await seeder.SeedUser();
+}
+catch (Exception)
+{
+    // ignored
+}
+
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment()|| app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
@@ -36,6 +55,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseStaticFiles();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
 app.Run();
-
-
