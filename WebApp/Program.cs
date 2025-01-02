@@ -5,7 +5,7 @@ using WebApp.ExtensionMethods.AuthConfigurations;
 using WebApp.ExtensionMethods.RegisterService;
 using WebApp.ExtensionMethods.SwaggerConfigurations;
 
-var builder = WebApplication.CreateBuilder(args);
+WebAppplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 
 builder.Services.AddControllers();
@@ -25,7 +25,7 @@ builder.Services.AddAuthConfigureService(builder.Configuration);
 
 builder.Services.AddEndpointsApiExplorer();
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 app.UseCors(
     build => build.WithOrigins( "http://localhost:3000","https://localhost:5173")
